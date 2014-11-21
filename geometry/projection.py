@@ -1,5 +1,6 @@
 
 from math import *
+from .linear import *
 
 def d(a, b):
     return sum(map(lambda i,j: (i-j)*(i-j), a, b))
@@ -56,6 +57,53 @@ def border_node( (x1,y1,z1), (x2,y2,z2), z_border):
 
 def internal_node( (x,y,z), factor):
     return (x*factor/-z, y*factor/-z, False)
+
+
+def inverse_project(globe, eye, center=(0,0,0), north=(0,1,0), front=True):
+    center = tuple(map(float, center))
+    north  = tuple(map(float, north))
+    eye    = tuple(map(float, eye))
+
+    paths = [ look_at(path, eye, center, north) for path in globe ]
+
+    d_center = sqrt(d(center, eye))
+
+    r = []
+    for path in paths:
+
+        visible = True
+        last = None
+        new_path = []
+
+        for i in xrange(len(path)):
+            z = path[i][2]+d_center
+            if z < .5:
+                path = path[i:]+path[:i]+[path[i]]
+                visible = False
+                break
+
+        for v in path:
+            z = v[2]+d_center
+            if z >= .5:
+                if not visible:
+                    new_path.append( (last[0]/z, last[1]/z, True ) )
+
+                new_path.append( (v[0]/z, v[1]/z, False) )
+                visible = True
+            else:
+                if visible:
+                    new_path.append( (v[0]/z, v[1]/z, True))
+                    r.append(new_path)
+                    new_path = []
+
+                visible = False
+
+            last = v
+
+        if len(new_path) > 0:
+            r.append(new_path)
+
+    return r
 
 def cone_project(globe, eye, center=(0,0,0), north=(0,1,0), front=True):
     center = tuple(map(float, center))
