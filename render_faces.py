@@ -1,7 +1,7 @@
 
 import math, sys, os
 
-import globe, svg, dhxcut, render
+import globe, svg, subdivide, render
 from geometry import projection, linear, dhxmath, dhxlamp
 
 #
@@ -61,10 +61,10 @@ def get_projection_paths(faces, globe, nodges, thickness, overhang, overcut):
         edges = [ (x*radius,-y*radius) for x,y,z in
                 projection.look_at(face['points'], eye=eye, north=north) ]
 
-        shape = dhxcut.jigsaw(edges, nodges, face['angles'],
-                              thickness=thickness,
-                              overhang=overhang,
-                              overcut=overcut)
+        shape = subdivide.subdivide(edges, nodges, face['angles'],
+                                    thickness=thickness,
+                                    overhang=overhang,
+                                    overcut=overcut)
 
         paths.append( { 'borders': svg.polygon_path(shape),
                         'projection': render.regions_path(proj) } )

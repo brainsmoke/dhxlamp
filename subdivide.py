@@ -2,8 +2,6 @@
 from math import *
 from geometry.linear import *
 
-#
-
 def jagged_longedge(a, b, angle, thickness, overhang, overcut):
 
     indent = thickness/tan(angle)
@@ -105,111 +103,12 @@ def replace_line(a, b, jag):
 
     return edges
         
-
-def scale_to_plane_on_normal(point, normal):
-    return scalar_mul(scalar_product(normal,normal) / scalar_product(point,normal), point)
-
-def dhxdron_deltoid_coords():
-
-    phi = ( sqrt(5.) + 1. ) / 2.
-    phi2 = phi**2
-    phi3 = phi**3
-
-    #rhombicosidodecahedron
-
-    normal = normalize( ( 1,  1, phi3) )
-
-    square1 = (
-        ( 1,  1, phi3),
-        (-1,  1, phi3),
-        ( 1, -1, phi3),
-        (-1, -1, phi3),
-    )
-
-    triangle = (
-        ( 1,  1, phi3),
-        (-1,  1, phi3),
-        (0, phi2, (2+phi)),
-    )
-
-    pentagon = (
-        ( 1,  1, phi3),
-        (phi2, phi, 2*phi),
-        ((2+phi), 0, phi2),
-        (phi2, -phi, 2*phi),
-        ( 1, -1, phi3),
-    )
-
-    square2 = (
-        ( 1,  1, phi3),
-        (0, phi2, (2+phi)),
-        (phi, 2*phi, phi2),
-        (phi2, phi, 2*phi),
-    )
-
-    deltoid = (
-        scale_to_plane_on_normal(vector_sum( *triangle ), normal),
-        scale_to_plane_on_normal(vector_sum( *square1 ), normal),
-        scale_to_plane_on_normal(vector_sum( *pentagon ), normal),
-        scale_to_plane_on_normal(vector_sum( *square2 ), normal),
-    )
-
-    return deltoid
-
-def dhxdron_deltoid_2d_coords():
-    deltoid = dhxdron_deltoid_coords()
-
-    phi = ( sqrt(5.) + 1. ) / 2.
-    normal = normalize( ( 1,  1, phi**3) )
-
-    top, left, bottom, right = deltoid
-    cross        = interpolate(left, right, .5)
-
-    dy_top        = d(normal, top)
-    dy_bottom     = d(normal, bottom)
-    dy_cross      = d(normal, cross)
-    dx_cross      = d(left, cross)
-
-    return ( (        0., -dy_top   ),
-             ( -dx_cross, -dy_cross ),
-             (        0., dy_bottom ),
-             (  dx_cross, -dy_cross ) )
-
-def deltoid_get_angle():
-    deltoid = dhxdron_deltoid_coords()
-
-    short_axis   = d(deltoid[1], deltoid[3])
-    long_axis    = d(deltoid[0], deltoid[2])
-    cross        = interpolate(deltoid[1], deltoid[3], .5)
-    sym_ax_long  = d(cross, deltoid[2])
-    sym_ax_short = d(cross, deltoid[0])
-
-    x, y, z = deltoid[3]
-    long_diag = d(deltoid[1], deltoid[2])
-    short_diag = d(deltoid[0], deltoid[1])
-
-    shortcut_long = y
-    ortholine_long = sym_ax_long*short_axis/long_diag
-    return acos( shortcut_long/ortholine_long )*2
-
-    # SAME! :-)
-    #shortcut_short = x
-    #ortholine_short = sym_ax_short*short_axis/short_diag
-    #print acos(shortcut_short/ortholine_short)*2
-
-def get_angle():
-    """ alternative calculation for sanity check """
-    phi = ( sqrt(5.) + 1. ) / 2.
-
-    r = d( (0,0,0), (1,1,phi**3) )
-    return acos(  ( r**2 + r**2 - 2**2 ) / ( r*r*2 ) )
-
 shape_map = {
     'S' : jagged_shortedge,
     'L' : jagged_longedge,
 }
 
-def jigsaw(shape, types, angles, thickness, overhang, overcut, shape_map=shape_map):
+def subdivide(shape, types, angles, thickness, overhang, overcut, shape_map=shape_map):
     edges = []
     for a, b, t, angle in zip(shape, shape[1:]+shape[:1], types, angles):
         edges.append( shape_map[t](a, b, angle, thickness, overhang, overcut))
@@ -220,18 +119,10 @@ slot_map = {
     'L': slot_long,
 }
 
-def jigsaw_slots(shape, types, native_scale, slot_map=slot_map):
+def slots(shape, types, native_scale, slot_map=slot_map):
     edges = []
     for t, a, b in zip(types, shape, shape[1:]+shape[:1]):
         edges.append( slot_map[t](a, b, native_scale))
 
     return tuple( edges )
-
-def shape(radius, thickness, overhang, overcut):
-    s = [ (x*radius, y*radius) for x,y in dhxdron_deltoid_2d_coords() ]
-    return jigsaw(s, "SLLS", [deltoid_get_angle()]*4, thickness, overhang, overcut)
-
-def slots(radius, native_scale):
-    s = [ (x*radius, y*radius) for x,y in dhxdron_deltoid_2d_coords() ]
-    return jigsaw_slots(s, "SLLS", native_scale)
 
