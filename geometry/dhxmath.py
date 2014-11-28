@@ -10,7 +10,8 @@ def scale_to_plane_on_normal(point, normal):
     return scalar_mul(scalar_product(normal,normal) / scalar_product(point,normal), point)
 
 def neighbours(plist, ix):
-    return tuple( i for i,x in enumerate(plist) if 1.999 < d(plist[ix], x) < 2.001 )
+    min_d = min( d(plist[ix], x) for i,x in enumerate(plist) if i != ix )
+    return tuple( i for i,x in enumerate(plist) if min_d-.001 < d(plist[ix], x) < min_d+.001 )
 
 def find_next_point(plist, a, b, c):
     v_in  = vector_sub(plist[b], plist[a])
@@ -54,7 +55,43 @@ def ccw_neighbours(plist, ix):
                     next_prod = prod
         onlist += [next_p]
     return tuple(onlist)
- 
+
+def dual_dihedral_angle(dual_v1, dual_v2):
+    e = d(dual_v1, dual_v2)
+    r = magnitude(dual_v1)
+    a, b, c = r, r, e
+    return acos( (a*a + b*b - c*c) / (2*a*b) )
+
+def catalan_face(dual_point, dual_faces):
+    return tuple( scale_to_plane_on_normal(vector_sum(*f), normalize(dual_point)) for f in dual_faces )
+
+def oriented_catalan_face(plist, ix):
+    nlist = ccw_neighbours(plist, ix)
+    faces = tuple( find_regular_polygon(plist, nlist[j-1], ix, nlist[j]) for j in xrange(len(nlist)) )
+    best = tuple( len(x) for x in faces )
+    best_ix = 0
+    for j in xrange(1, len(nlist)):
+        cur = tuple( len(x) for x in faces[j:]+faces[:j] )
+        if (cur < best):
+            best = cur
+            best_ix = j
+    nlist = nlist[best_ix:] + nlist[:best_ix]
+    faces = faces[best_ix:] + faces[:best_ix]
+    points = catalan_face(plist[ix], tuple( tuple( plist[n] for n in f ) for f in faces ) )
+    angles = [ dual_dihedral_angle( plist[ix], plist[neighbour] )
+               for neighbour in nlist ]
+
+    return {
+        'normal': normalize(plist[ix]),
+        'pos':    normalize(plist[ix]),
+        'points': points,
+        'neighbours': nlist,
+		'angles': angles,
+    }
+
+def dual_faces(plist):
+    return tuple( oriented_catalan_face(plist, i) for i in xrange(len(plist)) )
+
 def rhombicosidodecahedron_points():
 
     points = []
@@ -84,30 +121,30 @@ def rhombicosidodecahedron_points():
 
     return points
 
-def catalan_face(dual_point, dual_faces):
-    return tuple( scale_to_plane_on_normal(vector_sum(*f), normalize(dual_point)) for f in dual_faces )
-
-def deltoidalhexecontahedron_face(plist, ix):
-    nlist = ccw_neighbours(plist, ix)
-    faces = tuple( find_regular_polygon(plist, nlist[j-1], ix, nlist[j]) for j in xrange(len(nlist)) )
-    best = tuple( len(x) for x in faces )
-    best_ix = 0
-    for j in xrange(1, len(nlist)):
-        cur = tuple( len(x) for x in faces[j:]+faces[:j] )
-        if (cur < best):
-            best = cur
-            best_ix = j
-    nlist = nlist[best_ix:] + nlist[:best_ix]
-    faces = faces[best_ix:] + faces[:best_ix]
-    points = catalan_face(plist[ix], tuple( tuple( plist[n] for n in f ) for f in faces ) )
-    return {
-        'normal': normalize(plist[ix]),
-        'pos':    normalize(plist[ix]),
-        'points': points,
-        'neighbours': nlist,
-    }
-
 def deltoidalhexecontahedron_faces():
-    rhomb = rhombicosidodecahedron_points()
-    return tuple( deltoidalhexecontahedron_face(rhomb, i) for i in xrange(len(rhomb)) )
+    return dual_faces(rhombicosidodecahedron_points())
+
+def icosidodecahedron_points():
+
+    points = []
+    phi = ( sqrt(5.) + 1. ) / 2.
+    phi2 = phi**2
+    phi3 = phi**3
+
+    for x in (-phi, phi):
+        points.append( (x, 0, 0) )
+        points.append( (0, x, 0) )
+        points.append( (0, 0, x) )
+
+    for x in (-.5, .5):
+        for y in (-phi/2., phi/2.):
+            for z in (-(1+phi)/2., (1+phi)/2.):
+                points.append( (x, y, z) )
+                points.append( (z, x, y) )
+                points.append( (y, z, x) )
+
+    return points
+
+def rhombictriacontahedron_faces():
+    return dual_faces(icosidodecahedron_points())
 

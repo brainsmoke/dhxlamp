@@ -45,11 +45,8 @@ def region_path(r, center=(0.,0.)):
 
     return "M "+" L ".join( "%f,%f" % (x,y) for (x,y,_) in lines )+arc+" z "
 
-def regions_path(regions, color, center=(0.,0.), xtra=None):
-    if xtra == None:
-        xtra = ''
-    paths = map(lambda r: region_path(r, center), regions)
-    return '<path style="'+color+'" d="'+"\n".join(paths)+"\" "+xtra+"/>\n"
+def regions_path(regions, center=(0.,0.)):
+    return '\n'.join( region_path(r, center) for r in regions )
 
 if __name__ == '__main__':
 
@@ -73,8 +70,8 @@ if __name__ == '__main__':
     print svg.header(400, 400)
     print '<g transform="translate(200,200)">'
     print svg.circle(200, sea)
-    print regions_path(back, land_back)
-    print regions_path(front, land_front)
+    print svg.path( regions_path(back), style=land_back )
+    print svg.path( regions_path(front), style=land_front )
     print '</g>'
     print svg.footer()
 

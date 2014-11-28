@@ -204,30 +204,34 @@ def get_angle():
     r = d( (0,0,0), (1,1,phi**3) )
     return acos(  ( r**2 + r**2 - 2**2 ) / ( r*r*2 ) )
 
+shape_map = {
+    'S' : jagged_shortedge,
+    'L' : jagged_longedge,
+}
 
-def shape(radius, thickness, overhang, overcut):
+def jigsaw(shape, types, angles, thickness, overhang, overcut, shape_map=shape_map):
     edges = []
-    a, b, c, d = ( (x*radius, y*radius) for x,y in dhxdron_deltoid_2d_coords() )
-    
-    angle = deltoid_get_angle()
-
-    edges = (
-        jagged_shortedge(a, b, angle, thickness, overhang, overcut),
-        jagged_longedge(b, c, angle, thickness, overhang, overcut),
-        jagged_longedge(c, d, angle, thickness, overhang, overcut),
-        jagged_shortedge(d, a, angle, thickness, overhang, overcut),
-    )
+    for a, b, t, angle in zip(shape, shape[1:]+shape[:1], types, angles):
+        edges.append( shape_map[t](a, b, angle, thickness, overhang, overcut))
     return [ c for e in edges for c in e ]
 
+slot_map = {
+    'S': slot_short,
+    'L': slot_long,
+}
+
+def jigsaw_slots(shape, types, native_scale, slot_map=slot_map):
+    edges = []
+    for t, a, b in zip(types, shape, shape[1:]+shape[:1]):
+        edges.append( slot_map[t](a, b, native_scale))
+
+    return tuple( edges )
+
+def shape(radius, thickness, overhang, overcut):
+    s = [ (x*radius, y*radius) for x,y in dhxdron_deltoid_2d_coords() ]
+    return jigsaw(s, "SLLS", [deltoid_get_angle()]*4, thickness, overhang, overcut)
 
 def slots(radius, native_scale):
-    edges = []
-    a, b, c, d = ( (x*radius, y*radius) for x,y in dhxdron_deltoid_2d_coords() )
-    
-    return (
-        slot_short(a, b, native_scale),
-        slot_long(b, c, native_scale),
-        slot_long(c, d, native_scale),
-        slot_short(d, a, native_scale),
-    )
+    s = [ (x*radius, y*radius) for x,y in dhxdron_deltoid_2d_coords() ]
+    return jigsaw_slots(s, "SLLS", native_scale)
 
