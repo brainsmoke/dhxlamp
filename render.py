@@ -22,9 +22,9 @@
 # SOFTWARE.
 #
 
-import sys
+import sys, math
 
-import globe, math, svg
+import globe, svg
 
 def arc_path(from_, to, center):
     from_x, from_y = from_

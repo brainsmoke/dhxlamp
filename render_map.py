@@ -2,7 +2,7 @@
 import math, sys, os
 
 import globe, svg, subdivide, render
-from geometry import projection, linear, dhxmath, dhxlamp
+from geometry import projection, linear, dhxmath
 
 #
 # settings
@@ -12,11 +12,15 @@ radius = 120.
 thickness = 3.
 overhang = .5
 overcut = 0.
-sheetwidth = 570.
+sheetwidth = 880.
 
 engrave = 'stroke:none;fill:#000000'
 clip = 'stroke:none;fill:#0000ff'
 cut = 'stroke:#ff0000;fill:none'
+
+comment = 'stroke:none;fill:#0000ff'
+textstyle= 'font-size:50px;text-align:center;text-anchor:middle;'
+smalltextstyle= 'font-size:30px;text-align:center;text-anchor:middle;'
 
 #
 # convert to inkscape sizes
@@ -34,7 +38,7 @@ sheetwidth *= native_scale
 #
 # Sadly, some tiles have to me manually inverted
 #
-dhxdron_inverted = (21, 22, 25, 43, 44)
+dhxdron_inverted = (13, 19, 43, 47, 46)
 rhombictriacontahedron_inverted = (28,)
 
 def get_bounding_box(path):
@@ -72,7 +76,9 @@ def get_projection_paths(faces, globe, nodges, thickness, overhang, overcut):
 
         paths.append( { 'bbox'      : get_bounding_box(shape),
                         'borders'   : svg.polygon_path(shape),
-                        'projection': render.regions_path(engraving) } )
+                        'projection': render.regions_path(engraving),
+                        'neighbours': face['neighbours'],
+                        'points'    : edges } )
 
     return paths
 
@@ -94,7 +100,7 @@ def inkscape_batch_intersection(filename, face_count, inverted):
 def write_polygon_projection_svg(f, facepaths, sheetwidth, padding=5.*native_scale):
 
     x, y = padding, padding
-    cur_h = 0.
+    w, cur_h = 0., 0.
     pos = []
     for i, face in enumerate(facepaths):
         min_x, min_y, max_x, max_y = face['bbox']
@@ -106,10 +112,9 @@ def write_polygon_projection_svg(f, facepaths, sheetwidth, padding=5.*native_sca
         pos.append( (x-min_x, y-min_y) )
         cur_h = max(cur_h, face_h)
         x += face_w + padding
+        w = max(w, x)
 
-    y += cur_h + padding
-
-    w, h = x, y
+    h = y + cur_h + padding
 
     f.write(svg.header(w,h))
 
@@ -121,6 +126,18 @@ def write_polygon_projection_svg(f, facepaths, sheetwidth, padding=5.*native_sca
                                svg.path( face['projection'], style=engrave ),
                                id='engrave_'+str(i) )
         f.write(svg.group( borders + engraving, transform='translate('+str(x)+' '+str(y)+')' ))
+
+    for i, face in enumerate(facepaths):
+        x, y = pos[i]
+        s = svg.text(0,25, str(i), style=comment+';'+textstyle )
+        for n, a, b in zip(face['neighbours'],
+                           face['points'], face['points'][1:]+face['points'][:1]):
+            x1, y1 = a
+            x2, y2 = b
+            dx, dy = (x1+x2)/3., (y1+y2)/3.+15
+            s += svg.text(dx,dy, str(n), style=comment+';'+smalltextstyle )
+
+        f.write(svg.group( s, transform='translate('+str(x)+' '+str(y)+')' ))
 
     f.write(svg.footer())
 
@@ -138,21 +155,21 @@ def render_polyhedron_map(filename, faces, inverted, nodges,
 
     inkscape_batch_intersection(filename, len(faces), inverted)
 
-dhxremap = lambda: dhxlamp.remap_faces(dhxmath.deltoidalhexecontahedron_faces(),dhxlamp.configuration)
-
 projections = {
-    'dhxdron' : (dhxremap, dhxdron_inverted, "SLLS"),
+    'dhxdron' : (dhxmath.deltoidalhexecontahedron_faces, dhxdron_inverted, "SLLS"),
     'rhmtria' : (dhxmath.rhombictriacontahedron_faces, rhombictriacontahedron_inverted, "LLLL"),
     'phxdron' : (dhxmath.pentagonal_hexecontahedron_faces, (), "SSSLL"),
     'dystriacon' : (dhxmath.disdyakis_triacontahedron_faces, (), "LLL"),
+    'octahedron' : (dhxmath.octahedron_faces, (), "LLLL"),
 }
 
 if __name__ == '__main__':
 
     filename = sys.argv[1]
 
-    faces_func, inverted, nodges = projections['rhmtria']
-    #faces_func, inverted, nodges = projections['dhxdron']
+    #faces_func, inverted, nodges = projections['octahedron']
+    #faces_func, inverted, nodges = projections['rhmtria']
+    faces_func, inverted, nodges = projections['dhxdron']
     render_polyhedron_map(filename, faces_func(), inverted, nodges,
                           thickness=thickness,
                           overhang=overhang,

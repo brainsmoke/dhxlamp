@@ -42,6 +42,21 @@ def path(path, style=None):
 def polygon_path(coords):
     return 'M'+' L'.join( str(x)+' '+str(y) for x, y in coords )+' Z'
 
+def text(x, y, text, id=None, transform=None, style=None):
+    t = s = i = ''
+
+    if id:
+        i = ' id="'+id+'"'
+
+    if transform:
+        t = ' transform="'+transform+'"'
+
+    if style:
+        s = ' style="'+style+'"'
+
+    return '<text x="'+str(x)+'" y="'+str(y)+'"'+i+t+s+'>'+text+'</text>'
+
+
 def use(id, transform=None, style=None):
     t = s = ''
 

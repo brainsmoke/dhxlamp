@@ -238,3 +238,15 @@ def snub_dodecahedron_points():
 def pentagonal_hexecontahedron_faces():
     return dual_faces(snub_dodecahedron_points())
 
+def cube_points():
+    points = []
+
+    for x in (-1., 1):
+        for y in (-1., 1):
+            for z in (-1., 1):
+                points.append( (x, y, z) )
+
+    return points
+
+def octahedron_faces():
+    return dual_faces(cube_points())
