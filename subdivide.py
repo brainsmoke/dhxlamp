@@ -62,6 +62,9 @@ def jagged_shortedge(a, b, angle, thickness, overhang, overcut):
         #(7,    0),
     ) ) )
 
+def identity(a, b, angle, thickness, overhang, overcut):
+	return (a,)
+
 def slot_long(a, b, unit):
 
     return replace_line(a, b, tuple( (x/10., y) for x,y in (
@@ -106,6 +109,7 @@ def replace_line(a, b, jag):
 shape_map = {
     'S' : jagged_shortedge,
     'L' : jagged_longedge,
+	'I' : identity,
 }
 
 def subdivide(shape, types, angles, thickness, overhang, overcut, shape_map=shape_map):
